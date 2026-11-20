@@ -1,6 +1,6 @@
-export type MarketplaceFeeCalculation = {
+export type MarketplaceFeeBreakdown = {
   merchandiseSubtotalCents: number;
-  marketplaceCommissionRate: number;
+  commissionRate: number;
   shippingHandlingInsuranceRate: number;
   marketplaceCommissionCents: number;
   shippingHandlingInsuranceCents: number;
@@ -12,43 +12,44 @@ export function calculateMarketplaceFees(
   merchandiseSubtotalCents: number,
   commissionRate = 0.05,
   shippingHandlingInsuranceRate = 0.05
-): MarketplaceFeeCalculation {
-  if (!Number.isInteger(merchandiseSubtotalCents)) {
-    throw new Error("Subtotal must be an integer number of cents.");
-  }
-
-  if (merchandiseSubtotalCents < 0) {
-    throw new Error("Subtotal cannot be negative.");
+): MarketplaceFeeBreakdown {
+  if (!Number.isInteger(merchandiseSubtotalCents) || merchandiseSubtotalCents < 0) {
+    throw new Error("merchandiseSubtotalCents must be a non-negative integer.");
   }
 
   if (
     !Number.isFinite(commissionRate) ||
-    !Number.isFinite(shippingHandlingInsuranceRate) ||
     commissionRate < 0 ||
+    commissionRate > 1 ||
+    !Number.isFinite(shippingHandlingInsuranceRate) ||
     shippingHandlingInsuranceRate < 0 ||
-    commissionRate + shippingHandlingInsuranceRate > 1
+    shippingHandlingInsuranceRate > 1
   ) {
-    throw new Error("Invalid marketplace fee configuration.");
+    throw new Error("Fee rates must be between 0 and 1.");
   }
 
-  const commissionCents = Math.round(
-    merchandiseSubtotalCents * commissionRate
-  );
+  if (commissionRate + shippingHandlingInsuranceRate > 1) {
+    throw new Error("Combined fee rates cannot exceed 100%.");
+  }
 
-  const insuranceFeeCents = Math.round(
+  const marketplaceCommissionCents = Math.round(merchandiseSubtotalCents * commissionRate);
+  const shippingHandlingInsuranceCents = Math.round(
     merchandiseSubtotalCents * shippingHandlingInsuranceRate
   );
-
-  const totalFeesCents = commissionCents + insuranceFeeCents;
-  const sellerProceedsCents = merchandiseSubtotalCents - totalFeesCents;
+  const totalMarketplaceFeesCents =
+    marketplaceCommissionCents + shippingHandlingInsuranceCents;
+  const sellerProceedsCents = Math.max(
+    0,
+    merchandiseSubtotalCents - totalMarketplaceFeesCents
+  );
 
   return {
     merchandiseSubtotalCents,
-    marketplaceCommissionRate: commissionRate,
+    commissionRate,
     shippingHandlingInsuranceRate,
-    marketplaceCommissionCents: commissionCents,
-    shippingHandlingInsuranceCents: insuranceFeeCents,
-    totalMarketplaceFeesCents: totalFeesCents,
+    marketplaceCommissionCents,
+    shippingHandlingInsuranceCents,
+    totalMarketplaceFeesCents,
     sellerProceedsCents,
   };
 }
