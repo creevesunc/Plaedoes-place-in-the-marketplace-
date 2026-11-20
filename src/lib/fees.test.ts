@@ -42,18 +42,18 @@ describe("calculateMarketplaceFees", () => {
     expect(res.sellerProceedsCents).toBe(90000);
   });
 
-  it("handles large amounts without floating point drift", () => {
+  it("handles large amounts cleanly", () => {
     const res = calculateMarketplaceFees(12345679);
     expect(res.marketplaceCommissionCents + res.shippingHandlingInsuranceCents).toBe(
       res.totalMarketplaceFeesCents
     );
-    expect(
-      res.totalMarketplaceFeesCents + res.sellerProceedsCents
-    ).toBe(res.merchandiseSubtotalCents);
+    expect(res.totalMarketplaceFeesCents + res.sellerProceedsCents).toBe(
+      res.merchandiseSubtotalCents
+    );
   });
 
   it("handles decimal rounding boundaries cleanly", () => {
-    const res = calculateMarketplaceFees(15); // 0.75 -> 1 cent each
+    const res = calculateMarketplaceFees(15);
     expect(res.marketplaceCommissionCents).toBe(1);
     expect(res.shippingHandlingInsuranceCents).toBe(1);
     expect(res.totalMarketplaceFeesCents).toBe(2);
